@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>CSDN-专业IT技术社区</title>
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+		}
+		html {
+			width: 100%;
+			height: 100%;
+		}
+		body {
+			font-size: 14px;
+			background-color: #eee;
+			width: 100%;
+			height: 100%;
+		}
+		.container {
+			width: 100%;
+			text-align: center;	
+		}
+		.hr {
+			height: 1px;
+			background-color: #777;
+			margin: 20px 0;
+		}
+		form {
+			position: fixed;
+			bottom: 0;
+			left: 0;
+			right: 0;
+			padding-bottom: 10px;
+			background-color: #eee;
+		}
+		.form-group {
+			margin-bottom: 0;
+		}
+		.blue, .white {
+			display: inline-block;
+			font-weight: 900;
+			width: 30px;
+			height: 30px;
+			border-radius: 50%;
+			text-align: center;
+			line-height: 30px;
+		}
+		.blue {
+			background-color: #4395D1;
+			color: #fff;
+		}
+		.white {
+			color: #4395D1;
+			background-color: #fff;
+		}
+		ul {
+			list-style: none;
+		}
+		li {
+			border-bottom: 3px solid #fff;
+			position: relative;
+			line-height: 30px;
+			text-align: left;
+		}
+		span {
+			word-wrap: break-word;
+		}
+		.msg-list {
+			margin: 20px 0 100px;
+		}
+		.time {
+			position: absolute;
+			right: 20px;
+			line-height: 30px;
+		}
+	</style>
+    <!-- HTML5 shim 和 Respond.js 是为了让 IE8 支持 HTML5 元素和媒体查询（media queries）功能 -->
+    <!-- 警告：通过 file:// 协议（就是直接将 html 页面拖拽到浏览器中）访问页面时 Respond.js 不起作用 -->
+    <!--[if lt IE 9]>
+      <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+      <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+    <![endif]-->
+</head>
+<body>
+    <div class="container">
+        <button class="btn btn-default" id="clear-list">clear list</button>
+        <ul id="msg-list" class="msg-list"></ul>
+        
+        <form>
+            <div class="hr"></div>
+            <div>
+                <div class="input-group">
+                    <input type="text" class="form-control" id="msg-input">
+                    <span class="input-group-btn">
+                        <button class="btn btn-default" type="submit">发送</button>
+                    </span>
+                </div>
+            </div>
+        </form>
+        <audio id="audioPlay">
+            <!--<source src="/public/static/layui/newmsg.ogg" type="audio/ogg">-->
+            <source src="http://m3.13400.com:9888/v2013/ios7sms.mp3" type="audio/mpeg">
+            <!--<source src="/public/static/layui/newmsg.wav" type="audio/wav">-->
+        </audio>
+    </div>
+
+    <script src="http://code.jquery.com/jquery-2.1.4.min.js"></script>
+    <!-- 加载 Bootstrap 的所有 JavaScript 插件。你也可以根据需要只加载单个插件。 -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/js/bootstrap.min.js"></script>
+	<script src="/socket.io/socket.io.js"></script>
+	<!-- 右下角live2d效果 -->
+	<script type="text/javascript" charset="utf-8" async="" src="https://cdn.jsdelivr.net/npm/live2d-widget@3.0.4/lib/L2Dwidget.min.js"></script>
+	<!-- 右下角live2d效果 -->
+	<script type="text/javascript">
+		/*setTimeout(() => {
+			L2Dwidget.init({
+				"model": {
+					"scale": 0.5
+				},
+				"display": {
+					"position": "right",
+					"width": 180,
+					"height": 260,
+					"hOffset": 0,
+					"vOffset": -20
+				},
+				"mobile": {
+					"show": true,
+					"scale": 0.5
+				},
+				"react": {
+					"opacityDefault": 0.7,
+					"opacityOnHover": 0.2
+				}
+			});
+		}, 1000)*/
+	</script>
+    <script>
+		// 标题闪烁
+		var isShine = false;
+		//Chrome/FireFox
+		window.onfocus = function() {
+			isShine = false;
+		};
+		
+		//IE
+		document.onfocusin = function() {
+			isShine = false;
+		};
+		
+		//保存原始title，便于还原
+		var defaultTitle = document.title
+		setInterval(function() {
+			var title = document.title;
+			//判断是否获取焦点
+			if (isShine == true) {
+				//如果没有获取焦点就判断名称是否包含未读消息
+				if (/未读消息/.test(title) == false) {
+						//如果包含就显示为空
+					document.title = '【未读消息】';    
+				} else {
+						//否则显示未读消息，间隔0.5秒实现闪烁
+					document.title = '【　　　　】';
+				}
+			} else {
+					//如果获取到焦点就不闪烁，使用元素标题
+				document.title = defaultTitle;
+			}
+		}, 500);
+		
+		
+        var name = prompt("请输入你的名字："); // 用户输入psw
+        if (name === 'xsx' || name === 'sx') { // 用户验证
+			var socket = io('http://139.196.124.164:8989')
+    
+			//发送昵称给后端，并更改网页title
+			socket.emit("join", name)
+            // document.title = name + '的群聊'; // 修改页面标题
+            $('#msg-input').focus(); // 默认获取焦点
+			socket.on("join", function (user) {
+				// addLine(user + " 加入了群聊")
+				var liClass = user === 'sx' ? 'bg-info' : 'bg-warning'; // 消息背景色
+				var nameClass = user === 'sx' ? 'blue' : 'white'; // 消息人名样式
+				var str = '<li class="' + liClass + '"><span class="' + nameClass + '">' + user + '</span>：加入了群聊<span class="time">' + getTime() + '</span></li>';
+				$('#msg-list').append(str);
+			})
+
+			//接收到服务器发来的message事件
+			socket.on("message", function(info) {
+				addLine(info.user, info.msg)
+				document.documentElement.scrollTop = document.documentElement.scrollHeight;
+				if (info.user != name) {
+					$('#audioPlay')[0].play();
+					isShine = true;
+				}
+			})
+            $('form').submit(function() {
+                var msg = $('#msg-input').val(); // 获取输入的msg
+				var info = {
+					msg: msg,
+					user: name
+				}
+				socket.emit("message", info) //将消息发送给服务器
+                
+                $('#msg-input').val('');
+                $('#msg-input').focus();
+                return false; //阻止form提交
+            })
+        } else {
+            alert("您没有权限！");
+        }
+        function getTime() {
+            let time = new Date();
+            function b(num) {
+                return num < 10 ? '0' + num: num;
+            }
+            return b(time.getHours()) + ':' + b(time.getMinutes()) + ':' + b(time.getSeconds());
+        }
+		function addLine(infoName, msg) {
+			var liClass = infoName === 'sx' ? 'bg-info' : 'bg-warning'; // 消息背景色
+			var nameClass = infoName === 'sx' ? 'blue' : 'white'; // 消息人名样式
+			var str = '<li class="' + liClass + '"><span class="' + nameClass + '">' + infoName + '</span><span>：' + msg + '</span><span class="time">' + getTime() + '</span></li>';
+			$('#msg-list').append(str);
+		}
+        $('#clear-list').on('click', function(){
+			$('#msg-list').html('');
+        })
+        
+    </script>
+</body>
+</html>
